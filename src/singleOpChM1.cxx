@@ -34,14 +34,14 @@ void singleOpChM1(string file_suffix, string output_path, Int_t opch, string opc
 
 
 
-    string file_name = "/Users/shuaixiangzhang/Work/current/FNAL_Work2024/rsl_analyses/v4_analysis/root_data/" + file_suffix + ".root";
+    string file_name = "/Users/shuaixiangzhang/Work/current/FNAL_Work2024/crtNew/explore1/root_data/" + file_suffix + ".root";
     cout<<"Root file : "<<file_name<<endl;
 
     TH1F* Opch_counts[40];//40 XArapucas---
 
     //(M1)For membrane XA 0, 2, 17, 23---
     //Old: 100, 0, 200000; Current: 100, 0, 5000000
-    TH2F* CRT_XA_response = new TH2F("CRT_Opch", "CRT_Opch", 60, 0, 300, 800, 0, 200000);
+    TH2F* CRT_XA_response = new TH2F("CRT_Opch", "CRT_Opch", 50, 0, 800, 800, 0, 20000);
 
     //(M2)For membrane XA 1, 3, 16, 22---
     //Old: 100, 0, 2000; Current: 100, 0, 50000

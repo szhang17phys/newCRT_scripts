@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -37,6 +38,7 @@ struct FitResults{
     double num; //number of entries of hist
 };
 
+
 //used to store fitting arguments----------
 struct FitVars {
     double fitRangeMin;
@@ -53,7 +55,49 @@ struct FitVars {
     double widthIni;
     double widthMin;
     double widthMax;
+
+    //Initialization---
+    FitVars() {
+        fitRangeMin = 0.0;
+        fitRangeMax = 0.0;
+        mpvIni = 0.0;
+        mpvMin = 0.0;
+        mpvMax = 0.0;
+        sigmaIni = 0.0;
+        sigmaMin = 0.0;
+        sigmaMax = 0.0;
+        meanIni = 0.0;
+        meanMin = 0.0;
+        meanMax = 0.0;
+        widthIni = 0.0;
+        widthMin = 0.0;
+        widthMax = 0.0;
+    }
+
+    //copy constructor---
+    FitVars(const FitVars& other){
+        fitRangeMin = other.fitRangeMin;
+        fitRangeMax = other.fitRangeMax;
+        mpvIni = other.mpvIni;
+        mpvMin = other.mpvMin;
+        mpvMax = other.mpvMax;
+        sigmaIni = other.sigmaIni;
+        sigmaMin = other.sigmaMin;
+        sigmaMax = other.sigmaMax;
+        meanIni = other.meanIni;
+        meanMin = other.meanMin;
+        meanMax = other.meanMax;
+        widthIni = other.widthIni;
+        widthMin = other.widthMin;
+        widthMax = other.widthMax;
+
+    }
 };
+
+
+
+//Pay attention:
+//Here is cathodeXA responses (change fitting initialization)---
 
 
 
@@ -61,7 +105,7 @@ struct FitVars {
 //==========================================================
 //Convoluted Landau + Gaussian fitting---
 //For Gaussain, mean is not zero!
-FitResults CLG1(TH1F* hist, TFile* outputFile, const FitVars& vars) {
+FitResults CLG1(TH1F* hist, TFile* outputFile, const FitVars& vars, const char* canvasName) {
     //Create a RooRealVar for the variable you are fitting
     RooRealVar x("x", "Variable", hist->GetXaxis()->GetXmin(), hist->GetXaxis()->GetXmax());
 
@@ -152,7 +196,7 @@ FitResults CLG1(TH1F* hist, TFile* outputFile, const FitVars& vars) {
 
 
     //Create a canvas and draw the frame
-    TCanvas canvas("canvas", "Convoluted Landau + Gaussian Fit");
+    TCanvas canvas(canvasName, "Convoluted Landau + Gaussian Fit");
     histClone->Draw();
     frame->Draw("SAME");//Draw fitting function---
 
@@ -260,6 +304,7 @@ FitResults CLG1(TH1F* hist, TFile* outputFile, const FitVars& vars) {
 
 
 
+
 //==========================================================
 //The reason of resetting bin width is that the initial 
 //value is too large,making it hard to do Landau fitting---
@@ -335,7 +380,7 @@ double rightBorder(TH1F* hist){
     //Find the bin with the maximum entry
     int binMax = hist->GetMaximumBin();
 
-    // Get the maximum entry
+    //Get the maximum entry
     double maxEntry = hist->GetBinContent(binMax);
 
     //Find the first bin with zero entry after the maximum
@@ -464,29 +509,25 @@ void DrawScatterWithLine(TH2F* hist2D, const double* distances, const double* mp
 
 
 //==========================================================
+//OLD Main function!---
 void slice_fitTMP(const std::string& rsl){
     //change file name each time-----------------------
-    string file_path = "../results/combine_2000results/";
-//    string file_suffix = rsl + "_2000num_e67_crtCut.root";
-    string file_suffix = rsl + "_1000num_e67_crtCut.root";//only For RSL100---    
-    string output_path = "../results/fit_Develop/membrane1/";
+    string file_path = "../results/combine_1000results/";
+    string file_suffix = "Combine_" + rsl + "_1000num_e67_hist.root";
+    string output_path = "../results/fit_Develop/m1/";
     string output_name = "fitCLG1";
 
     //store fitting results at txt file---
-    std::ofstream outputTxt("../results/fit_Develop/membrane1/"+rsl+"_fitCLG1.txt");
+    std::ofstream outputTxt("../results/fit_Develop/m1/"+rsl+"_fitCLG1.txt");
 
     //Choose the slice you want to look at!---
     //Define the X(distance) values where you want to extract data---
-    Double_t distances[60];
-    for (int i=0; i<60; ++i){
-        distances[i] = 5*i + 2.5;
+    Double_t distances[50];
+    for (int i=0; i<50; ++i){
+        distances[i] = 16*i + 8.0;
     }
-    //----------------------------------------------------
+    //--------------------------------------------------
 
-    FitResults tmpResults; //used to tmporarily store fitResults---
-    Double_t mpvConv[60];
-    Double_t sigConv[60];
-    Int_t numHist[60];
 
 
     //Open the input root file----------------------------------------------------
@@ -499,8 +540,7 @@ void slice_fitTMP(const std::string& rsl){
     }
 
     //Access the TH2F from the file---
-//    TH2F* inputTH2F = (TH2F*)inputFile->Get("summedM1");
-    TH2F* inputTH2F = (TH2F*)inputFile->Get("membrane1");//Only for RSL100---    
+    TH2F* inputTH2F = (TH2F*)inputFile->Get("membrane1");
 
     if(!inputTH2F){
         std::cerr<<"Error: Cannot find TH2F in the input file"<< std::endl;
@@ -509,9 +549,14 @@ void slice_fitTMP(const std::string& rsl){
     }
 
     //Create an array of TH1F histograms to store extracted data---
-    //num = 60 here!---
+    //num = 50 here!---
     const int num = sizeof(distances)/sizeof(distances[0]);
     TH1F* hists[num];
+    FitResults tmpResults; //used to tmporarily store fitResults---
+    Double_t mpvConv[num];
+    Double_t sigConv[num];
+    Int_t numHist[num];
+
 
     //Extract values from TH2F and create TH1F---
     for(int i=0; i<num; ++i){
@@ -521,7 +566,7 @@ void slice_fitTMP(const std::string& rsl){
         //Create a TH1F for each extracted data---
         hists[i] = new TH1F(Form("hist_%d", i), Form("Distance = %.1f cm", x), inputTH2F->GetNbinsY(), inputTH2F->GetYaxis()->GetXmin(), inputTH2F->GetYaxis()->GetXmax());
 
-        hists[i]->GetXaxis()->SetTitle("# #gamma / 1000");
+        hists[i]->GetXaxis()->SetTitle("# #gamma [10^{3}]");
         hists[i]->GetYaxis()->SetTitle("Event Rate");
 
         //Fill the TH1F with data from the TH2F---
@@ -546,38 +591,68 @@ void slice_fitTMP(const std::string& rsl){
 
     //draw each histo in single canvas---
     for(int i=0; i<num; ++i){
-        adjustXAxisBinWidth(hists[i], 1000.0);
+        adjustXAxisBinWidth(hists[i], 1000.0);//now range is [0, 200] in units of 1000.
 
-/*        if(distances[i] <= 70){//hist has 100 bins
+        if(250 <= distances[i] && distances[i] < 400){//hist has 100 bins; initial 800
             combineBins(hists[i]);
         }
-        if(distances[i] <= 40){//hist has 50 bins
+        if(150 <= distances[i] && distances[i] < 250){//hist has 100 bins; initial 800
+            combineBins(hists[i]);
+            combineBins(hists[i]);
             combineBins(hists[i]);
         }
-*/
+        if(0 <= distances[i] && distances[i] < 150){
+            combineBins(hists[i]);
+            combineBins(hists[i]);
+            combineBins(hists[i]);
+            combineBins(hists[i]);
+        }
+
+
         borderR = rightBorder(hists[i]);
         borderL = leftBorder(hists[i]); 
+
 
         vars.fitRangeMin = borderL;
         vars.fitRangeMax = borderR;
 
-        vars.mpvIni = 10.0;
-        vars.mpvMin = 1.0;
-        vars.mpvMax = 200.0;
+        vars.mpvIni = 3.0;
+        vars.mpvMin = 0.01;
+        vars.mpvMax = 10.0;
 
-        vars.widthIni = 5.0;
+        vars.widthIni = 3.0;
         vars.widthMin = 0.01;
-        vars.widthMax = 100.0;
+        vars.widthMax = 10.0;
 
-        vars.meanIni = 10.0;
-        vars.meanMin = 1.0;
-        vars.meanMax = 200.0;
+        vars.meanIni = 3.0;
+        vars.meanMin = 0.01;
+        vars.meanMax = 10.0;
 
-        vars.sigmaIni = 5.0;
+        vars.sigmaIni = 3.0;
         vars.sigmaMin = 0.01;
-        vars.sigmaMax = 100.0;
+        vars.sigmaMax = 10.0;
 
-        tmpResults = CLG1(hists[i], outputFile, vars);
+        string nameS = "Distance = " + std::to_string(distances[i]) +"cm";
+        const char * name = nameS.c_str();
+
+
+        //single point correction------------------------------
+        if(rsl == "rsl99" && distances[i] == 472.0){
+            FitVars varsTMP = vars;
+            varsTMP.mpvIni = 0.05;
+            varsTMP.meanIni = 0.05;
+            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
+        }   
+        else if(rsl == "rsl99" && distances[i] == 232.5){
+            FitVars varsTMP = vars;
+            varsTMP.mpvIni = 3.0;
+            varsTMP.meanIni = 3.0;
+            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
+        }  
+        else{
+            tmpResults = CLG1(hists[i], outputFile, vars, name);//core, fit function---
+        }
+
 
         mpvConv[i] = tmpResults.mpvC * 1000.0;
         sigConv[i] = tmpResults.sigC * 1000.0;
@@ -602,7 +677,7 @@ void slice_fitTMP(const std::string& rsl){
 
 
 
-    //Store fitting files---------
+    //Store fitting results inside txt files---------
     if (!outputTxt.is_open()) {
         std::cerr << "Error: Cannot open output file for writing" << std::endl;
         return;
@@ -620,18 +695,14 @@ void slice_fitTMP(const std::string& rsl){
 
 
 
-
-
-
-
-//Main function!============================================
+//New Main function========================================
 void slice_fit_m1(){
 
-    slice_fitTMP("rsl100");
+    slice_fitTMP("rsl99");
 //    slice_fitTMP("rsl50");
 //    slice_fitTMP("rsl70");
+//    slice_fitTMP("rsl130");      
 //    slice_fitTMP("rsl150");    
 
 }
 //=========================================================
-

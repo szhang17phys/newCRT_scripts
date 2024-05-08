@@ -380,7 +380,7 @@ double rightBorder(TH1F* hist){
     //Find the bin with the maximum entry
     int binMax = hist->GetMaximumBin();
 
-    // Get the maximum entry
+    //Get the maximum entry
     double maxEntry = hist->GetBinContent(binMax);
 
     //Find the first bin with zero entry after the maximum
@@ -512,9 +512,8 @@ void DrawScatterWithLine(TH2F* hist2D, const double* distances, const double* mp
 //OLD Main function!---
 void slice_fitTMP(const std::string& rsl){
     //change file name each time-----------------------
-    string file_path = "../results/combine_3000results/";
-    string file_suffix = rsl + "_3000num_e67_crtCut.root";
-//    string file_suffix = rsl + "_1000num_e67_crtCut.root";
+    string file_path = "../results/combine_1000results/";
+    string file_suffix = "Combine_" + rsl + "_1000num_e67_hist.root";
     string output_path = "../results/fit_Develop/cathode/";
     string output_name = "fitCLG1";
 
@@ -523,16 +522,12 @@ void slice_fitTMP(const std::string& rsl){
 
     //Choose the slice you want to look at!---
     //Define the X(distance) values where you want to extract data---
-    Double_t distances[60];
-    for (int i=0; i<60; ++i){
-        distances[i] = 5*i + 2.5;
+    Double_t distances[50];
+    for (int i=0; i<50; ++i){
+        distances[i] = 8*i + 4.0;
     }
     //--------------------------------------------------
 
-    FitResults tmpResults; //used to tmporarily store fitResults---
-    Double_t mpvConv[60];
-    Double_t sigConv[60];
-    Int_t numHist[60];
 
 
     //Open the input root file----------------------------------------------------
@@ -545,7 +540,7 @@ void slice_fitTMP(const std::string& rsl){
     }
 
     //Access the TH2F from the file---
-    TH2F* inputTH2F = (TH2F*)inputFile->Get("summedCathode8XA");
+    TH2F* inputTH2F = (TH2F*)inputFile->Get("cathode8XA");
 //    TH2F* inputTH2F = (TH2F*)inputFile->Get("cathode8XA");
 
     if(!inputTH2F){
@@ -555,9 +550,13 @@ void slice_fitTMP(const std::string& rsl){
     }
 
     //Create an array of TH1F histograms to store extracted data---
-    //num = 60 here!---
+    //num = 50 here!---
     const int num = sizeof(distances)/sizeof(distances[0]);
     TH1F* hists[num];
+    FitResults tmpResults; //used to tmporarily store fitResults---
+    Double_t mpvConv[num];
+    Double_t sigConv[num];
+    Int_t numHist[num];
 
 
     //Extract values from TH2F and create TH1F---
@@ -568,7 +567,7 @@ void slice_fitTMP(const std::string& rsl){
         //Create a TH1F for each extracted data---
         hists[i] = new TH1F(Form("hist_%d", i), Form("Distance = %.1f cm", x), inputTH2F->GetNbinsY(), inputTH2F->GetYaxis()->GetXmin(), inputTH2F->GetYaxis()->GetXmax());
 
-        hists[i]->GetXaxis()->SetTitle("# #gamma / 1000");
+        hists[i]->GetXaxis()->SetTitle("# #gamma [10^{3}]");
         hists[i]->GetYaxis()->SetTitle("Event Rate");
 
         //Fill the TH1F with data from the TH2F---
@@ -595,32 +594,18 @@ void slice_fitTMP(const std::string& rsl){
     for(int i=0; i<num; ++i){
         adjustXAxisBinWidth(hists[i], 1000.0);//now range is [0, 200] in units of 1000.
 
-        if(200 <= distances[i]){//hist has 400 bins; initial 800
-            combineBins(hists[i]);
-        }
-        if(150 <= distances[i] && distances[i]<200){//hist has 200 bins; initial 800
-            combineBins(hists[i]);
-            combineBins(hists[i]);
-        }
-        if(70<=distances[i] && distances[i]<150){//hist has 100 bins
+        if(100 <= distances[i]){//hist has 100 bins; initial 800
             combineBins(hists[i]);
             combineBins(hists[i]);
             combineBins(hists[i]);
         }
-        if(40<=distances[i] && distances[i]<70){//hist has 50 bins
+        if(0 <= distances[i] && distances[i] < 100){
             combineBins(hists[i]);
             combineBins(hists[i]);
             combineBins(hists[i]);
             combineBins(hists[i]);
         }
 
-        if(distances[i] < 40){//hist has 25 bins
-            combineBins(hists[i]);
-            combineBins(hists[i]);
-            combineBins(hists[i]);
-            combineBins(hists[i]);
-            combineBins(hists[i]);
-        }
 
         borderR = rightBorder(hists[i]);
         borderL = leftBorder(hists[i]); 
@@ -629,121 +614,39 @@ void slice_fitTMP(const std::string& rsl){
         vars.fitRangeMin = borderL;
         vars.fitRangeMax = borderR;
 
-        vars.mpvIni = 10.0;
-        vars.mpvMin = 1.0;
-        vars.mpvMax = 200.0;
+        vars.mpvIni = 5.0;
+        vars.mpvMin = 0.1;
+        vars.mpvMax = 50.0;
 
         vars.widthIni = 5.0;
         vars.widthMin = 0.01;
         vars.widthMax = 100.0;
 
-        vars.meanIni = 10.0;
-        vars.meanMin = 1.0;
-        vars.meanMax = 200.0;
+        vars.meanIni = 5.0;
+        vars.meanMin = 0.1;
+        vars.meanMax = 50.0;
 
         vars.sigmaIni = 5.0;
         vars.sigmaMin = 0.01;
-        vars.sigmaMax = 100.0;
+        vars.sigmaMax = 50.0;
 
         string nameS = "Distance = " + std::to_string(distances[i]) +"cm";
         const char * name = nameS.c_str();
 
 
         //single point correction------------------------------
-        if(rsl == "rsl99" && distances[i] == 212.5){
+        if(rsl == "rsl99" && distances[i] == 124.0){
             FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
+            varsTMP.mpvIni = 5.0;
+            varsTMP.meanIni = 0.0;
             tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
         }   
         else if(rsl == "rsl99" && distances[i] == 232.5){
             FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
+            varsTMP.mpvIni = 5.0;
+            varsTMP.meanIni = 5.0;
             tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
         }  
-        else if(rsl == "rsl70" && distances[i] == 197.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl70" && distances[i] == 217.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl70" && distances[i] == 242.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl130" && distances[i] == 137.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl130" && distances[i] == 182.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 5.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.01;
-            varsTMP.meanMax = 100.0;
-            vars.mpvIni = 5.0;
-            vars.widthMin = 0.001;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl130" && distances[i] == 207.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl130" && distances[i] == 212.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl130" && distances[i] == 222.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl150" && distances[i] == 172.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 5.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.01;
-            varsTMP.meanMax = 100.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl150" && distances[i] == 177.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 5.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.01;
-            varsTMP.meanMax = 100.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-        else if(rsl == "rsl150" && distances[i] == 212.5){
-            FitVars varsTMP = vars;
-            varsTMP.meanIni = 0.0;//Apply N(0, width)---
-            varsTMP.meanMin = 0.0;
-            varsTMP.meanMax = 0.0;
-            tmpResults = CLG1(hists[i], outputFile, varsTMP, name); 
-        } 
-
         else{
             tmpResults = CLG1(hists[i], outputFile, vars, name);//core, fit function---
         }
@@ -793,11 +696,11 @@ void slice_fitTMP(const std::string& rsl){
 //New Main function========================================
 void slice_fit(){
 
-//    slice_fitTMP("rsl99");
+    slice_fitTMP("rsl99");
 //    slice_fitTMP("rsl50");
 //    slice_fitTMP("rsl70");
 //    slice_fitTMP("rsl130");      
-    slice_fitTMP("rsl150");    
+//    slice_fitTMP("rsl150");    
 
 }
 //=========================================================

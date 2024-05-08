@@ -18,7 +18,7 @@ using namespace std;
 
 void singleOpChC1(string file_suffix, string output_path, Int_t opch, string opch_string) {
 
-    string file_name = "/Users/shuaixiangzhang/Work/current/FNAL_Work2024/rsl_analyses/v4_analysis/root_data/" + file_suffix + ".root";
+    string file_name = "/Users/shuaixiangzhang/Work/current/FNAL_Work2024/crtNew/explore1/root_data/" + file_suffix + ".root";
     cout<<"Root file : "<<file_name<<endl;
 
     TH1F* Opch_counts[40];//40 XArapucas---
@@ -33,7 +33,7 @@ void singleOpChC1(string file_suffix, string output_path, Int_t opch, string opc
 
     //(C1)For Cathode XA 4, 5, 6, 7, 8, 9, 10, 11---
     //Old: 100, 0, 200000; Current: 100, 0, 5000000
-    TH2F* CRT_XA_response = new TH2F("CRT_Opch", "CRT_Opch", 60, 0, 300, 800, 0, 200000);
+    TH2F* CRT_XA_response = new TH2F("CRT_Opch", "CRT_Opch", 50, 0, 400, 800, 0, 100000);
 
     //(P1)For PMTs 31, 33---
     //Old: 100, 0, 20000; Current: 100, 0, 500000
@@ -87,7 +87,7 @@ void singleOpChC1(string file_suffix, string output_path, Int_t opch, string opc
         cout<<CRTBot_posY<<", "<<CRTBot_posZ<<")"<<endl;        
 
         CrtCut->GetEntry(i);
-        if(cross){
+/*        if(cross){
             cout<<"\nIt went through bot CRT!\n"<<endl;
             pass++;
         }
@@ -95,7 +95,7 @@ void singleOpChC1(string file_suffix, string output_path, Int_t opch, string opc
             cout<<"\nOUT!\n"<<endl;
             continue; 
         }
-
+*/
         for(Int_t j=i*40; j<(i+1)*40; ++j){
             OpDetsXA->GetEntry(j);
             Opch_counts[(Int_t)OpChannel]->Fill(CountDetected);

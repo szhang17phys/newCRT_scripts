@@ -3,8 +3,8 @@
 
 #single opch extraction-----------------------
 #Pay attention: location of file must be at ./root_data/
-inputFile="rsl99_500num_e67_hist"
-outputDir="/Users/shuaixiangzhang/Work/current/FNAL_Work2024/rsl_analyses/v4_analysis/results/tmp/"
+inputFile="rsl99_1000num_e67_hist"
+outputDir="/Users/shuaixiangzhang/Work/current/FNAL_Work2024/crtNew/explore1/results/tmp/"
 
 #single opch combination----------------------
 input_path=$outputDir
